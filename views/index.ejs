@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>TavernKeeper</title>
+	<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+	<header class="app-header">
+		<div class="brand">🧩 <strong>TavernKeeper</strong></div>
+		<div class="header-actions">
+			<span class="status"><%= user.username %></span>
+			<button class="subtle" id="reorderTabs">↕ Reorder Tabs</button>
+			<button class="subtle" id="jumpTab">☰ Jump to Tab</button>
+			<span class="status" id="connection">Disconnected</span>
+			<form method="post" action="/logout"><button class="subtle" type="submit">Sign out</button></form>
+		</div>
+	</header>
+	<main class="keeper-shell">
+		<section class="target-bar">
+			<label for="player">Target player:</label>
+			<select id="player"><option value="">Connect to load players</option></select>
+			<button class="subtle" id="refreshPlayers">⟳ Refresh</button>
+			<span class="hint">Actions below happen at this player's location.</span>
+			<div class="connection-buttons">
+				<button class="primary" id="connect">Connect</button>
+				<button class="subtle" id="disconnect">Disconnect</button>
+			</div>
+		</section>
+
+		<nav class="tabs" id="tabs">
+			<% ["Spawn","Find & Select","Move & Rotate","Server Settings","Save & Load","Player Admin","Macros"].forEach((name, i) => { %>
+				<button class="tab<%= i === 0 ? ' active' : '' %>" data-view="view-<%= i %>"><%= name %></button>
+			<% }) %>
+		</nav>
+
+		<section class="tab-panel">
+			<div class="view active" id="view-0">
+				<p class="hint">Spawns a prefab at the target player's location.</p>
+				<label class="section-label" for="spawnPrefab">PREFAB</label>
+				<div class="field-row"><input id="spawnPrefab" autocomplete="off" placeholder="Prefab name or hash"><button class="primary" id="browsePrefabs">Browse Prefabs…</button></div>
+				<label class="section-label" for="spawnArgs">ARGUMENTS (optional)</label>
+				<input id="spawnArgs" placeholder="Additional spawn arguments">
+				<button class="wide primary" id="spawn">Spawn at Target Player</button>
+			</div>
+
+			<div class="view" id="view-1">
+				<div class="inline-controls"><label for="diameter">Diameter:</label><input id="diameter" value="10" class="short"><button class="primary" id="findNearby">🔍 Find Nearby</button><span class="hint">around the target player</span></div>
+				<div class="two-columns">
+					<div><label class="section-label">NEARBY (✓ = group)</label><div class="list-box" id="nearbyList"><div class="empty">Run Find Nearby to populate this list.</div></div></div>
+					<div><label class="section-label">SELECTION HISTORY</label><div class="list-box" id="historyList"><div class="empty">No selection history.</div></div><button class="subtle small-button" id="clearHistory">Clear</button></div>
+				</div>
+				<label class="section-label" for="selectPrefab">SELECT BY PREFAB (nearest to target player)</label>
+				<div class="field-row"><input id="selectPrefab" placeholder="Prefab name or hash"><button class="primary" id="browseSelectPrefabs">Browse Prefabs…</button></div>
+				<button class="wide primary" id="selectNearest">Select Nearest</button>
+				<label class="section-label">CURRENT SELECTION</label>
+				<div class="button-row"><button id="getString">Get String</button><button id="snapGround">Snap to Ground</button><button id="lookAt">Look At Target</button><button id="unselect">Unselect</button><button class="danger" id="destroySelection">Destroy</button></div>
+			</div>
+
+			<div class="view" id="view-2">
+				<p class="hint">Acts on whatever is currently selected in Find & Select.</p>
+				<div class="move-layout">
+					<div class="control-card"><h3>Move amount <input id="moveAmount" value="0.5" class="short"></h3><div class="direction-grid"><button data-move="forward">↑</button><button data-move="up">Up</button><button data-move="left">←</button><button id="cloneSelection">Clone</button><button data-move="right">→</button><button data-move="back">↓</button><button data-move="down">Down</button></div></div>
+					<div class="control-card"><h3>Rotate degrees <input id="rotateDegrees" value="15" class="short"></h3><div class="rotate-grid"><button data-rotate="pitch -">Pitch −</button><button data-rotate="pitch +">Pitch +</button><button data-rotate="roll -">Roll −</button><button data-rotate="roll +">Roll +</button><button data-rotate="yaw -">Yaw −</button><button data-rotate="yaw +">Yaw +</button></div></div>
+				</div>
+				<label class="section-label">SCALE</label><p class="hint">Sets the uniform scale of the selected object (1.0 = normal).</p>
+				<div class="scale-controls"><button id="scaleDown">−</button><input id="scale" value="1.0" class="short"><button id="scaleUp">+</button><button class="primary" id="setScale">Set Scale</button></div>
+			</div>
+
+			<div class="view" id="view-3">
+				<label class="section-label">SERVER CLOCK</label>
+				<div class="button-row"><input id="serverTime" value="12:00" class="short"><button class="primary" id="setTime">Set Time</button><button id="toggleTime">Toggle Day/Night</button></div>
+				<p class="hint">24-hour time, e.g. 14:30 for 2:30pm.</p>
+				<hr>
+				<label class="section-label">SERVER SETTINGS</label><p class="hint">Values apply immediately but are not read back from the server.</p>
+				<div id="settingsFields"></div>
+			</div>
+
+			<div class="view" id="view-4">
+				<p class="hint">Build a list of prefabs to save, then export it to a file you can load again later.</p>
+				<div class="button-row"><button class="primary" id="addSaved">+ Add Current Selection</button><button class="danger" id="removeSaved">− Remove Selected</button></div>
+				<label class="section-label">STAGED ITEMS</label><div class="list-box tall" id="savedList"><div class="empty">No staged items.</div></div>
+				<div class="button-row"><button class="primary" id="saveFile">💾 Save to File…</button><button id="loadFile">📂 Load from File…</button><button class="primary push-right" id="spawnSaved">🪄 Spawn All</button></div>
+				<input type="file" id="loadFileInput" accept=".json" hidden>
+			</div>
+
+			<div class="view" id="view-5">
+				<p class="hint">Acts on the target player selected above.</p>
+				<div class="button-row"><button class="primary" id="kick">Kick</button><button class="danger" id="kill">Kill</button></div>
+				<label class="section-label" for="adminMessage">MESSAGE</label><input id="adminMessage" placeholder="Message to display">
+				<div class="button-row"><label>Duration (seconds): <input id="messageDuration" value="5" class="short"></label><button class="primary" id="sendMessage">Send Message</button><button id="sendAll">Send to All</button></div>
+				<label class="section-label" for="teleportTarget">TELEPORT TO</label><input id="teleportTarget" placeholder="Another player's name">
+				<p class="hint">Another player's name to teleport to them.</p><button class="wide primary" id="teleport">Teleport to Player</button>
+				<label class="section-label">QUICK TELEPORT</label><div class="quick-grid" id="quickTeleport"></div>
+				<label class="section-label" for="homeValue">SET HOME</label><input id="homeValue" value="reset"><p class="hint">'reset' clears it back to the respawn point.</p><button class="wide primary" id="setHome">Set Home</button>
+				<hr><label class="section-label">PLAYER STATS</label><button class="primary" id="refreshStats">Refresh Stats</button><div class="stats-grid" id="stats"></div>
+			</div>
+
+			<div class="view" id="view-6">
+				<p class="hint">Save one or more console commands as a reusable macro.</p>
+				<div class="button-row"><button class="primary" id="addMacro">+ Add Macro</button><button id="refreshMacros">⟳ Refresh</button><span class="hint push-right" id="macroCount"></span></div>
+				<div id="macroList"></div>
+			</div>
+
+			<div class="toast" id="toast"></div>
+			<label class="section-label">CONSOLE OUTPUT</label>
+			<pre class="console" id="consoleOutput">Not connected.</pre>
+		</section>
+	</main>
+	<script src="/app.js"></script>
+</body>
+</html>
