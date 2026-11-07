@@ -127,7 +127,7 @@ app.post("/login", (req, res) => {
 		const user = findUser(username, supplied);
 		if (!user) return res.status(401).render("login", { error: "Invalid username or user token." });
 
-		if(!user.roles.toLowerCase().includes(["admin", "moderator","owner"])) {
+		if(!user.roles.includes(["admin", "moderator","owner"])) {
 			return res.status(401).render("login", { error: "You are not authorized to access this resource." });
 		}
 		req.session.regenerate(error => {
