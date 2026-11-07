@@ -7,7 +7,7 @@ const { TavernClient, readToken, CONSOLE_EVENT_TYPES } = require("tavern-client"
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const host = process.env.TAVERN_HOST || "127.0.0.1";
+const host = process.env.TAVERN_HOST || "0.0.0.0";
 const tavernPort = Number(process.env.TAVERN_PORT || 1760);
 const tokenPath = process.env.TAVERN_TOKEN_PATH || path.join(
 	process.env.APPDATA || path.join(process.env.USERPROFILE || process.cwd(), "AppData", "Roaming"),
