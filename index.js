@@ -57,7 +57,7 @@ function findUser(username, token) {
 	return {
 		username: key,
 		userId: user.user_id,
-		roles: Array.isArray(user.roles) ? user.roles.map(String) : []
+		roles: user.roles
 	};
 }
 
@@ -126,10 +126,10 @@ app.post("/login", (req, res) => {
 	try {
 		const user = findUser(username, supplied);
 		if (!user) return res.status(401).render("login", { error: "Invalid username or user token." });
-
-		if(!user.roles.includes(["admin", "moderator","owner"])) {
-			return res.status(401).render("login", { error: "You are not authorized to access this resource." });
-		}
+		console.log(`User ${user.username}  attempting to authenticate with roles: ${user.roles.join(", ")}`);
+		if(user.roles.includes("admin") || user.roles.includes("moderator") || user.roles.includes("owner")) {
+			
+		
 		req.session.regenerate(error => {
 			if (error) return res.status(500).render("login", { error: "Unable to start a secure session." });
 			req.session.authenticated = true;
@@ -137,6 +137,10 @@ app.post("/login", (req, res) => {
 			console.log(`User ${user.username} logged in with roles: ${user.roles.join(", ")}`);
 			res.redirect("/");
 		});
+	}
+	else {
+		return res.status(403).render("login", { error: "You do not have permission to access this application." });
+	}
 	} catch (error) {
 		console.error(`Unable to read users registry: ${error.message}`);
 		return res.status(503).render("login", { error: "The users registry could not be read." });
@@ -166,7 +170,9 @@ app.get("/api/status", (req, res) => res.json({
 
 app.post("/api/connect", async (req, res) => {
 	try {
-		await connectedClient();
+		if (req.session.user.roles.includes("admin") || req.session.user.roles.includes("moderator") || req.session.user.roles.includes("owner")) {
+			await connectedClient();
+		}
 		res.json({ connected: true });
 	} catch (error) {
 		lastError = error.message;
