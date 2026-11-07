@@ -134,6 +134,7 @@ app.post("/login", (req, res) => {
 			if (error) return res.status(500).render("login", { error: "Unable to start a secure session." });
 			req.session.authenticated = true;
 			req.session.user = user;
+			console.log(`User ${user.username} logged in with roles: ${user.roles.join(", ")}`);
 			res.redirect("/");
 		});
 	} catch (error) {
