@@ -126,6 +126,10 @@ app.post("/login", (req, res) => {
 	try {
 		const user = findUser(username, supplied);
 		if (!user) return res.status(401).render("login", { error: "Invalid username or user token." });
+
+		if(!user.roles.toLowerCase().includes(["admin", "moderator","owner"])) {
+			return res.status(401).render("login", { error: "You are not authorized to access this resource." });
+		}
 		req.session.regenerate(error => {
 			if (error) return res.status(500).render("login", { error: "Unable to start a secure session." });
 			req.session.authenticated = true;
